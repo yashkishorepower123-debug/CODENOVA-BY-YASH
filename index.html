@@ -647,7 +647,30 @@
         })
       });
 
-      const data = await response.json();
+      
+const data = await response.json();
+
+if (!response.ok) {
+  throw new Error(data.error || "AI request failed.");
+}
+
+const answer = data.reply ?? data.answer;
+
+if (typeof answer !== "string" || !answer.trim()) {
+  throw new Error("The AI returned no valid text. Check the Worker logs.");
+}
+
+pending.article.remove();
+
+conversation.push({
+  role: "assistant",
+  content: answer
+});
+
+addMessage("assistant", answer);
+
+conversation = conversation.slice(-20);
+  
 
       if (!response.ok) {
         throw new Error(data.error || "AI request failed.");
