@@ -42,8 +42,6 @@
       min-height: 100vh;
     }
 
-    /* Sidebar */
-
     .sidebar {
       background: #10121c;
       border-right: 1px solid var(--border);
@@ -115,8 +113,6 @@
       color: #67e8a5;
     }
 
-    /* Main area */
-
     main {
       display: flex;
       flex-direction: column;
@@ -125,10 +121,11 @@
     }
 
     header {
-      height: 65px;
+      min-height: 65px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
       padding: 0 28px;
       border-bottom: 1px solid var(--border);
     }
@@ -144,6 +141,7 @@
       padding: 8px 12px;
       font-size: 11px;
       color: var(--muted);
+      white-space: nowrap;
     }
 
     .workspace {
@@ -154,8 +152,6 @@
       flex-direction: column;
       flex: 1;
     }
-
-    /* Welcome screen */
 
     .welcome {
       margin: auto 0 35px;
@@ -232,8 +228,6 @@
       font-size: 11px;
       color: var(--muted);
     }
-
-    /* Chat messages */
 
     #messages {
       display: flex;
@@ -319,8 +313,6 @@
       font: 12px/1.8 Consolas, monospace;
       white-space: pre;
     }
-
-    /* Input composer */
 
     .composer {
       border: 1px solid #38354f;
@@ -420,13 +412,17 @@
       .suggestions {
         grid-template-columns: 1fr;
       }
+
+      .hint {
+        max-width: 190px;
+      }
     }
   </style></head><body>
 <div class="app">  <aside class="sidebar">
     <div class="logo">
       <div class="logo-icon">&lt;/&gt;</div>
       <div>Code<span>Nova</span></div>
-    </div><button class="new-chat" id="newChat">＋ New chat</button>
+    </div><button class="new-chat" id="newChat" type="button">＋ New chat</button>
 
 <div class="section-label">WORKSPACE</div>
 <div class="nav-item active">✳ Coding assistant</div>
@@ -456,25 +452,25 @@
     </p>
 
     <div class="suggestions">
-      <button class="suggestion"
+      <button class="suggestion" type="button"
         data-prompt="Explain JavaScript promises with examples.">
         <strong>↗ Learn a concept</strong>
         <small>Understand programming</small>
       </button>
 
-      <button class="suggestion"
+      <button class="suggestion" type="button"
         data-prompt="Help me debug my code. Ask me for my code and error message.">
         <strong>⌁ Fix a bug</strong>
         <small>Find and fix errors</small>
       </button>
 
-      <button class="suggestion"
+      <button class="suggestion" type="button"
         data-prompt="Build a responsive website using HTML, CSS and JavaScript.">
         <strong>▤ Build a project</strong>
         <small>Create a working website</small>
       </button>
 
-      <button class="suggestion"
+      <button class="suggestion" type="button"
         data-prompt="Explain secure coding practices with practical examples.">
         <strong>◇ Code security</strong>
         <small>Learn safer programming</small>
@@ -482,8 +478,7 @@
     </div>
   </div>
 
-  <div id="messages" class="hidden"
-    aria-live="polite"></div>
+  <div id="messages" class="hidden" aria-live="polite"></div>
 
   <form class="composer" id="chatForm">
     <textarea id="prompt"
@@ -493,9 +488,7 @@
 
     <div class="composer-footer">
       <span class="hint">Enter to send · Shift + Enter for newline</span>
-      <button class="send" id="sendBtn" type="submit">
-        Send ↑
-      </button>
+      <button class="send" id="sendBtn" type="submit">Send ↑</button>
     </div>
   </form>
 
@@ -507,6 +500,9 @@
 
   </main>
 </div><script>
+  const API_URL =
+    "https://codenovabackend.yashkishorepower123.workers.dev/api/chat";
+
   const form = document.getElementById("chatForm");
   const promptInput = document.getElementById("prompt");
   const messagesEl = document.getElementById("messages");
@@ -551,9 +547,12 @@
     return { article, output };
   }
 
-  // Safely display AI text and fenced code blocks.
-  // Never insert model output using innerHTML.
   function renderContent(container, text) {
+    // Prevent undefined or non-string content from breaking rendering.
+    if (typeof text !== "string") {
+      text = "Sorry, CodeNova received an invalid response.";
+    }
+
     const regex = /```([a-zA-Z0-9_+#.-]*)\n([\s\S]*?)```/g;
 
     let lastIndex = 0;
@@ -587,7 +586,9 @@
         try {
           await navigator.clipboard.writeText(code);
           copy.textContent = "Copied!";
-          setTimeout(() => copy.textContent = "Copy code", 1200);
+          setTimeout(() => {
+            copy.textContent = "Copy code";
+          }, 1200);
         } catch {
           copy.textContent = "Copy unavailable";
         }
@@ -629,6 +630,7 @@
     addMessage("user", text);
 
     promptInput.value = "";
+    promptInput.style.height = "auto";
 
     const pending = addMessage(
       "assistant",
@@ -637,7 +639,7 @@
     );
 
     try {
-      const response = await fetch("https://codenovabackend.yashkishorepower123.workers.dev/api/chat", {
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -647,54 +649,57 @@
         })
       });
 
-      
-const data = await response.json();
+      let data;
 
-if (!response.ok) {
-  throw new Error(data.error || "AI request failed.");
-}
-
-const answer = data.reply ?? data.answer;
-
-if (typeof answer !== "string" || !answer.trim()) {
-  throw new Error("The AI returned no valid text. Check the Worker logs.");
-}
-
-pending.article.remove();
-
-conversation.push({
-  role: "assistant",
-  content: answer
-});
-
-addMessage("assistant", answer);
-
-conversation = conversation.slice(-20);
-  
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("The backend returned an invalid response.");
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || "AI request failed.");
+        throw new Error(
+          typeof data?.error === "string"
+            ? data.error
+            : `AI request failed (HTTP ${response.status}).`
+        );
+      }
+
+      const answer =
+        typeof data?.reply === "string"
+          ? data.reply
+          : typeof data?.answer === "string"
+            ? data.answer
+            : "";
+
+      if (!answer.trim()) {
+        throw new Error(
+          "No AI reply received. Check your Cloudflare Worker logs."
+        );
       }
 
       pending.article.remove();
 
       conversation.push({
         role: "assistant",
-        content: data.answer
+        content: answer
       });
 
-      addMessage("assistant", data.answer);
+      addMessage("assistant", answer);
 
       conversation = conversation.slice(-20);
 
     } catch (error) {
       pending.article.remove();
 
-      addMessage(
-        "assistant",
-        "Error: " + error.message
-      );
+      const message =
+        error instanceof TypeError
+          ? "Could not connect to the backend. Check the Worker URL and CORS settings."
+          : error.message || "An unexpected error occurred.";
 
+      addMessage("assistant", "Error: " + message);
+
+      // Remove the failed user message from the conversation history.
       conversation.pop();
 
     } finally {
@@ -738,6 +743,7 @@ conversation = conversation.slice(-20);
     messagesEl.classList.add("hidden");
     welcome.classList.remove("hidden");
     promptInput.value = "";
+    promptInput.style.height = "auto";
     promptInput.focus();
   });
 </script></body>
