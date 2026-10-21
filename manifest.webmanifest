@@ -1,10 +1,11 @@
+
 {
-  "id": "./",
+  "id": "/CODENOVA-BY-YASH/",
   "name": "CodeNova AI",
   "short_name": "CodeNova",
-  "description": "CodeNova AI \u2014 your coding partner",
-  "start_url": "./",
-  "scope": "./",
+  "description": "CodeNova AI — your coding partner",
+  "start_url": "/CODENOVA-BY-YASH/",
+  "scope": "/CODENOVA-BY-YASH/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#0b0d14",
@@ -16,19 +17,19 @@
   ],
   "icons": [
     {
-      "src": "./icons/icon-192.png",
+      "src": "/CODENOVA-BY-YASH/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icons/icon-512.png",
+      "src": "/CODENOVA-BY-YASH/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icons/icon-maskable-512.png",
+      "src": "/CODENOVA-BY-YASH/icons/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
